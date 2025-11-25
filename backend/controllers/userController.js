@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 
 const generateToken = (id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET, {
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
 };
@@ -16,15 +16,15 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-    email: z.email(),
-    password: z.string(),
+    email: z.email("Invalid email format"),
+    password: z.string().min(6, "Password must be atc least 6 characters"),
 });
 
 const registerUser = async (req, res) => {
     try {
         const validation = registerSchema.safeParse(req.body);
 
-        if(!validation.success){
+        if (!validation.success) {
             return res.status(400).json({
                 errors: z.flattenError(validation.error)
             })
@@ -32,7 +32,7 @@ const registerUser = async (req, res) => {
 
         const { name, email, password } = validation.data;
 
-        const userExist = await User.findOne({email});
+        const userExist = await User.findOne({ email });
         if (userExist) {
             return res.status(400).json({
                 message: 'User already exists'
@@ -43,12 +43,12 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const user = await User.create({
-            name, 
+            name,
             email,
             password: hashedPassword,
         });
 
-        if(user) {
+        if (user) {
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
@@ -70,15 +70,18 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const validation = loginSchema.safeParse(req.body);
-        if(!validation.success){
+        if (!validation.success) {
             return res.status(400).json({
                 error: z.flattenError(validation.error)
             });
         }
 
+        email = validation.data.email;
+        password = validation.data.password;
+
         const user = await User.findOne({ email });
 
-        if(user && (await bcrypt.compare(password, user.password))){
+        if (user && (await bcrypt.compare(password, user.password))) {
             res.json({
                 _id: user._id,
                 name: user.name,
@@ -97,4 +100,4 @@ const loginUser = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser};
+module.exports = { registerUser, loginUser };
