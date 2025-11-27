@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { uploadBook , getMyBook } = require('../controllers/bookController');
+const { uploadBook , getMyBook, getBookById } = require('../controllers/bookController');
 const { protect } = require('../middleware/authMiddleware');
 
 const storage = multer.diskStorage({
@@ -30,5 +30,7 @@ const upload = multer({
 router.post('/', protect, upload.single('pdfFile'), uploadBook);
 
 router.get('/', protect, getMyBook);
+
+router.get('/:id', protect, getBookById);
 
 module.exports = router;

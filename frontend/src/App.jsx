@@ -4,6 +4,7 @@ import Login from "./pages/Login"
 import PrivateRoute from "./components/PrivateRoute";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import Reader from "./pages/Reader";
 
 function App() {
 
@@ -23,10 +24,12 @@ function App() {
             }
           />
 
-          <Route path="/read/:id" element={
-            <div className="p-10 text-center">
-              Reading Page Coming Soon!
-            </div>
+          <Route
+            path="/read/:id"
+            element={
+              <PrivateRoute>
+                <Reader />
+              </PrivateRoute>
             }
           />
 

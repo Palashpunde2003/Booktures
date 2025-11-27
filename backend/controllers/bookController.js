@@ -47,4 +47,27 @@ const getMyBook = async (req, res) => {
     }
 };
 
-module.exports = { uploadBook, getMyBook };
+const getBookById = async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+
+        if (book) {
+            if (book.user.toString() !== req.user._id.toString()) {
+                return res.status(401).json({
+                    message: 'Not authorised to view the book'
+                });
+            }
+            res.json(book);
+        } else {
+            res.status(404).json({
+                message: 'Book not found'
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+module.exports = { uploadBook, getMyBook, getBookById };
