@@ -3,13 +3,7 @@ import { AuthProvider } from "./context/AuthContext"
 import Login from "./pages/Login"
 import PrivateRoute from "./components/PrivateRoute";
 import Signup from "./pages/Signup";
-
-const Home = () => (
-  <div className="p-10 text-center">
-    <h1 className="text-3xl font-bold">📚 Welcome to Booktures</h1>
-    <p className="mt-4">You are safely logged in!</p>
-  </div>
-);
+import Dashboard from "./pages/Dashboard";
 
 function App() {
 
@@ -24,10 +18,18 @@ function App() {
             path="/"
             element={
               <PrivateRoute>
-                <Home />
+                <Dashboard />
               </PrivateRoute>
             }
           />
+
+          <Route path="/read/:id" element={
+            <div className="p-10 text-center">
+              Reading Page Coming Soon!
+            </div>
+            }
+          />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
