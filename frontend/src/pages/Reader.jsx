@@ -1,9 +1,9 @@
-import { useState, useEffect, useContext, use } from "react";
+import { useState, useEffect, useContext, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from 'axios';
 import { AuthContext } from "../context/AuthContext";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles, AlertCircle } from "lucide-react";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -22,8 +22,11 @@ const Reader = () => {
     const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(true);
 
+    const [containerWidth, setContainerWidth] = useState(null);
+    const pdfWrapperRef = useRef(null);
+
     const [pageText, setPageText] = useState('');
-    const [aiImage, setAiImage] = useState('null');
+    const [aiImage, setAiImage] = useState(null);
     const [generatingImg, setGeneratingImg] = useState(false);
 
     useEffect(() => {
@@ -41,24 +44,38 @@ const Reader = () => {
         fetchBook();
     }, [id, user]);
 
+    const updateWidth = useCallback(() => {
+        if (pdfWrapperRef.current) {
+            setContainerWidth(pdfWrapperRef.current.clientWidth - 64);
+        }
+    }, []);
+
+    useEffect(() => {
+        updateWidth();
+        window.addEventListener('resize', updateWidth);
+        return () => window.removeEventListener('resize', updateWidth);
+    }, [updateWidth]);
+
     const onPageLoadSuccess = async (page) => {
         const textContent = await page.getTextContent();
         const text = textContent.items.map((item) => item.str).join(' ');
         setPageText(text);
-
         generateImage(text);
     };
 
     const generateImage = async (text) => {
-        if (!text) return;
+        if (!text || text.length < 20) return;
 
         setGeneratingImg(true);
 
-        const prompt = `cinematic fantasy art, detailed, ${text.substring(0, 300).replace(/[^\w\s]/gi, '')}`;
+        const cleanText = text.replace(/\s+/g, ' ').substring(0, 500);
+        const style = "comic book page, graphic novel style, multiple panels, speech bubbles with text, expressive characters, flat colors, thick outlines, modern webtoon style";
+        
+        const prompt = `${style}, scene description: ${cleanText.replace(/[^\w\s]/gi, '')}`;
         const encodedPrompt = encodeURIComponent(prompt);
 
         const seed = Math.floor(Math.random() * 1000);
-        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
 
         const img = new Image();
         img.src = url;
@@ -75,94 +92,99 @@ const Reader = () => {
     const changePage = (offset) => {
         setPageNumber(prev => {
             const target = prev + offset;
-
             if (target < 1) return 1;
             if (target > numPages) return numPages;
-
             return target;
         });
     };
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin w-10 h-10 text-indigo-600"/></div>;
-    if (!book) return <div className="text-center p-10">Book not found</div>;
+    if (loading) return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="animate-spin w-10 h-10 text-indigo-500"/></div>;
+    if (!book) return <div className="text-center p-10 bg-gray-900 text-white">Book not found</div>;
 
     return (
         <div className="flex flex-col h-screen bg-gray-900 text-white overflow-hidden">
 
+            {/* Header */}
             <header className="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 z-10">
                 <div className="flex items-center gap-4">
                     <Link to="/" className="p-2 hover:bg-gray-700 rounded-full transition"><ArrowLeft className="w-5 h-5" /></Link>
                     <h1 className="font-medium truncate max-w-xs">{book.title}</h1>
                 </div>
-                <div className="text-sm text-gray-400">
-                    Page {pageNumber} of {numPages}
+                <div className="text-sm text-gray-400 font-mono border border-gray-600 px-2 py-0.5 rounded">
+                    Page {pageNumber} / {numPages}
                 </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden">
+                <div 
+                    ref={pdfWrapperRef}
+                    className="flex-1 overflow-auto bg-gray-800/50 flex flex-col items-center p-8 relative custom-scrollbar"
+                >
+                    <div className="shadow-2xl border border-gray-700 w-full"> 
+                        <Document
+                            file={`http://localhost:3000/${book.filePath}`}
+                            onLoadSuccess={onDocumentLoadSuccess}
+                            loading={<div className="text-white p-10">Loading PDF...</div>}
+                            className="flex justify-center"
+                        >
+                            <Page
+                                pageNumber={pageNumber}
+                                onLoadSuccess={onPageLoadSuccess}
+                                renderTextLayer={true}
+                                renderAnnotationLayer={false}
+                                width={containerWidth || 500} 
+                                className="bg-white"
+                            />
+                        </Document>
+                    </div>
 
-                <div className="flex-1 overflow-auto bg-gray-500/10 flex justify-center p-8 relative">
-                    <Document
-                        file={`http://localhost:3000/${book.filePath}`} // Pointing to our backend static folder
-                        onLoadSuccess={onDocumentLoadSuccess}
-                        loading={<div className="text-white">Loading PDF...</div>}
-                        className="shadow-2xl"
-                    >
-                        <Page
-                            pageNumber={pageNumber}
-                            onLoadSuccess={onPageLoadSuccess}
-                            renderTextLayer={true} // Needed for text extraction
-                            renderAnnotationLayer={false}
-                            width={500} // Fixed width for consistency
-                            className="bg-white shadow-xl"
-                        />
-                    </Document>
-
-                    <div className="absolute bottom-8 flex gap-4 bg-gray-800/90 p-2 rounded-xl backdrop-blur-sm shadow-xl">
+                    <div className="fixed bottom-8 bg-gray-900/90 p-2 rounded-full border border-gray-600 backdrop-blur-md shadow-2xl flex gap-4 z-20">
                         <button
                             onClick={() => changePage(-1)}
                             disabled={pageNumber <= 1}
-                            className="p-2 hover:bg-gray-700 rounded-lg disabled:opacity-30"
+                            className="p-3 hover:bg-gray-700 rounded-full disabled:opacity-30 transition-colors"
                         >
                             <ChevronLeft className="w-6 h-6" />
                         </button>
                         <button
                             onClick={() => changePage(1)}
                             disabled={pageNumber >= numPages}
-                            className="p-2 hover:bg-gray-700 rounded-lg disabled:opacity-30"
+                            className="p-3 hover:bg-gray-700 rounded-full disabled:opacity-30 transition-colors"
                         >
                             <ChevronRight className="w-6 h-6" />
                         </button>
                     </div>
                 </div>
 
-                <div className="w-[45%] bg-black border-l border-gray-800 relative flex items-center justify-center overflow-hidden">
-
-                    {aiImage && !generatingImg ? (
-                        <img
-                            src={aiImage}
-                            alt="AI Visualization"
-                            className="w-full h-full object-cover animate-in fade-in duration-700"
-                        />
-                    ) : (
-                        <div className="text-center p-8">
-                            <div className="relative inline-block">
-                                <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse"></div>
-                                <Sparkles className={`w-12 h-12 text-indigo-400 mx-auto mb-4 ${generatingImg ? 'animate-pulse' : ''}`} />
+                <div className="w-1/2 bg-black border-l border-gray-800 relative flex flex-col">
+                    <div className="flex-1 relative overflow-hidden bg-gray-950">
+                        {aiImage ? (
+                            <img
+                                src={aiImage}
+                                alt="Comic Visualization"
+                                className={`w-full h-full object-contain transition-opacity duration-500 ${generatingImg ? 'opacity-50 blur-sm' : 'opacity-100'}`}
+                            />
+                        ) : (
+                            <div className="flex h-full items-center justify-center flex-col opacity-30 p-8">
+                                <Sparkles className="w-16 h-16 mb-4 text-gray-500" />
+                                <p>Waiting for story...</p>
                             </div>
-                            <p className="text-indigo-300 font-medium">
-                                {generatingImg ? "Dreaming up the scene..." : "Waiting for story..."}
-                            </p>
-                            <p className="text-gray-500 text-xs mt-2 max-w-xs mx-auto">
-                                {generatingImg ? "Analyzing page context & generating visuals" : "Turn the page to see the magic."}
-                            </p>
-                        </div>
-                    )}
+                        )}
 
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">Context Analysis</p>
-                        <p className="text-xs text-gray-300 line-clamp-2 opacity-60 font-mono">
-                            {pageText.substring(0, 150)}...
+                        {generatingImg && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="bg-black/70 backdrop-blur-md px-6 py-4 rounded-2xl border border-gray-700 flex flex-col items-center shadow-2xl">
+                                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
+                                    <span className="text-sm font-bold text-indigo-300">Drawing Comic Panel...</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="h-auto max-h-32 bg-gray-900 border-t border-gray-800 p-4 overflow-y-auto">
+                        <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold mb-1">Scene Context</p>
+                        <p className="text-xs text-gray-400 font-mono leading-relaxed">
+                            {pageText.substring(0, 200)}...
                         </p>
                     </div>
                 </div>
