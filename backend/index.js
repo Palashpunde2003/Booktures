@@ -20,14 +20,14 @@ app.use(cors({
 app.use('/api/users', userRoutes);
 app.use('/api/books', bookRoutes);
 
-// upload folder will be available at server - http://localhost:3000/uploads/filename.pdf
+// upload folder will be available at server
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 app.get('/', (req, res) => {
     res.send('Booktures APT is running...');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
