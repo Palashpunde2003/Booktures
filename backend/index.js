@@ -21,13 +21,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/books', bookRoutes);
 
 // upload folder will be available at server - http://localhost:3000/uploads/filename.pdf
-app.use('/uploads', express.static(path.join(__dirname, '/uploads'), 
-    // {setHeaders: function (res, path, stat) {
-    //     res.set('Access-Control-Allow-Origin', '*');
-    //     res.set('Access-Control-Allow-Methods', 'GET');
-    //     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    // }}
-));
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 app.get('/', (req, res) => {
     res.send('Booktures APT is running...');
