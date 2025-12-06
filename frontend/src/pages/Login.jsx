@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
+import API_URL from '../config';
 import { useNavigate, Link } from "react-router-dom";
 import { BookOpen, Loader2 } from "lucide-react";
 
@@ -22,7 +23,7 @@ const Login = () => {
             const config = { headers: { 'Content-Type': 'application/json' } };
 
             const { data } = await axios.post(
-                'http://localhost:3000/api/users/login',
+                `${API_URL}/api/users/login`,
                 { email, password },
                 config
             );

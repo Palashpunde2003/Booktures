@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import API_URL from '../config';
 import { AuthContext } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { Plus, Book, Loader2, UploadCloud } from 'lucide-react'
@@ -19,7 +20,7 @@ const Dashboard = () => {
             const config = {
                 headers: { Authorization: `Bearer ${user.token}` },
             };
-            const { data } = await axios.get('http://localhost:3000/api/books', config);
+            const { data } = await axios.get(`${API_URL}/api/books`, config);
             setBooks(data);
         } catch (error) {
             console.error("Error fetching books: ", error);
@@ -51,7 +52,7 @@ const Dashboard = () => {
             };
 
             await axios.post(
-                'http://localhost:3000/api/books',
+                `${API_URL}/api/books`,
                 formData,
                 config,
             );

@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from 'axios';
+import API_URL from '../config';
 import { AuthContext } from "../context/AuthContext";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles, AlertCircle } from "lucide-react";
@@ -33,7 +34,7 @@ const Reader = () => {
         const fetchBook = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const { data } = await axios.get(`http://localhost:3000/api/books/${id}`, config);
+                const { data } = await axios.get(`${API_URL}/api/books/${id}`, config);
                 setBook(data);
             } catch (error) {
                 console.error("Error loading Book:", error);
@@ -122,7 +123,7 @@ const Reader = () => {
                 >
                     <div className="shadow-2xl border border-gray-700 w-full"> 
                         <Document
-                            file={`http://localhost:3000/${book.filePath}`}
+                            file={`${API_URL}/${book.filePath}`}
                             onLoadSuccess={onDocumentLoadSuccess}
                             loading={<div className="text-white p-10">Loading PDF...</div>}
                             className="flex justify-center"
