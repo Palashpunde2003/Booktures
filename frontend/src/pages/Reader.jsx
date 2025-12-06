@@ -5,7 +5,7 @@ import API_URL from '../config';
 import { AuthContext } from "../context/AuthContext";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles, AlertCircle } from "lucide-react";
-
+// worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url,
